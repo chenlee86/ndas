@@ -1,0 +1,35 @@
+name: Back4App Keepalive
+
+on:
+  schedule:
+    # 每 50 分钟跑一次（GitHub Actions 的时间是 UTC）
+    - cron: '*/50 * * * *'
+  # 手动触发用来测试
+  workflow_dispatch:
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Update keepalive file
+        run: |
+          date -u +"%Y-%m-%dT%H:%M:%SZ" > .back4app-keepalive.txt
+
+      - name: Commit & push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "[email protected]"
+          git add .back4app-keepalive.txt
+
+          # 如果没有变化，就不要提交，避免制造垃圾部署
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+
+          git commit -m "chore: keep Back4App alive $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          git push
